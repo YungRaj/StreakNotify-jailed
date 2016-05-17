@@ -1,5 +1,5 @@
 # StreakNotify-Jailed
-This version of StreakNotify allows one to install it on a non-jailbroken iDevice. 32 bit binaries are supported only because the theos-jailed fork of the theos framework only supports arm64 binaries only. 
+This version of StreakNotify allows one to install it on a non-jailbroken iDevice. 32 bit binaries are supported only because the theos-jailed fork of the theos framework only supports armv7 binaries only. 
 
 # How to compile
 1. Create a provisioning profile from developer.apple.com with a unique App ID
