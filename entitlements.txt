@@ -1,5 +1,0 @@
->>> HealthKit
->>> Wireless Accessory Configuration
->>> Associated Domains
->>> App Groups:
-    group.snapchat.picaboo-patched
