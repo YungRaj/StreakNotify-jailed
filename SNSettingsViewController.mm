@@ -1,37 +1,67 @@
+#import "SNAPI.h"
 #import "SNSettingsViewController.h"
-#import "Friendmojilist/FriendmojiListController.h"
+#import "FriendmojiListController.h"
 
 extern NSDictionary *prefs;
 static NSMutableDictionary *preferences = nil;
 static NSDictionary *general = @{@"kStreakNotifyDisabled" : @"Disable StreakNotify?",
-                                 @"kExactTime" : @"Show exact ime remaining"};
+                                 @"kExactTime" : @"Show exact time remaining"};
 static NSDictionary *notifications = @{ @"kTwelveHours" :  @"12 hours remaining",
                                         @"kFiveHours" : @"5 hours remaining",
                                         @"kOneHour" : @"1 hour remaining",
                                         @"kTenMinutes" : @"10 minutes remaining" };
-static NSArray *custom = @[@"Custom Time",@"Friendmoji", @"AutoReply"];
+static NSArray *custom = @[@"Hours",@"Minutes",@"Seconds",@"Friendmoji", @"AutoReply"];
 
 
+typedef enum{
+    GENERAL,
+    NOTIFICATIONS,
+    CUSTOM,
+} SNSettingsCellType;
 
 @interface SNSettingsCell : UITableViewCell {
     
 }
 
 @property (strong,nonatomic) UISwitch *toggle;
+@property (strong,nonatomic) UITextField *time;
 
 @end
 
 @implementation SNSettingsCell
 
--(id)initWithStyle:(UITableViewCellStyle)style
+-(id)initWithType:(SNSettingsCellType)type
+        style:(UITableViewCellStyle)style
    reuseIdentifier:(NSString *)reuseIdentifier{
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if(self){
-        self.toggle = [[UISwitch alloc] initWithFrame:CGRectMake(self.frame.size.width-self.frame.size.height-40,10,
-                                                                 self.frame.size.height,self.frame.size.height-5)];
-        [self addSubview:self.toggle];
-        [self.toggle addTarget:self action:@selector(toggleSwitch)
-              forControlEvents:UIControlEventTouchUpInside];
+        CGSize size = self.frame.size;
+        if(type == GENERAL || type == NOTIFICATIONS){
+            self.toggle = [[UISwitch alloc] initWithFrame:CGRectMake(size.width-size.width/12.5,size.height/20,
+                                                                     size.width/15,size.height-size.height/10)];
+            [self.toggle setOn:[preferences[reuseIdentifier] boolValue] animated:YES];
+            [self addSubview:self.toggle];
+            [self.toggle addTarget:self action:@selector(toggleSwitch)
+                  forControlEvents:UIControlEventTouchUpInside];
+            
+        } else if(type == CUSTOM){
+            if([reuseIdentifier isEqualToString:@"Hours"] ||
+               [reuseIdentifier isEqualToString:@"Minutes"] ||
+               [reuseIdentifier isEqualToString:@"Seconds"]){
+                NSString *key = [NSString stringWithFormat:@"kCustom%@",reuseIdentifier];
+                self.time = [[UITextField alloc] initWithFrame:CGRectMake(size.width-size.width/7.5,size.height/20,
+                                                                          size.width/4,size.height-size.height/10)];
+                self.time.text = [NSString stringWithFormat:@"%d",[preferences[key] intValue]];
+                self.time.borderStyle = UITextBorderStyleRoundedRect;
+                self.time.keyboardType = UIKeyboardTypeNumberPad;
+                [self addSubview:self.time];
+                
+                [[NSNotificationCenter defaultCenter] addObserver:self
+                                                         selector:@selector(preferencesWillExit:)
+                                                             name:@"streakNotifyPreferencesWillExit"
+                                                           object:nil];
+            }
+        }
     }
     return self;
 }
@@ -39,6 +69,23 @@ static NSArray *custom = @[@"Custom Time",@"Friendmoji", @"AutoReply"];
 -(void)toggleSwitch{
     NSString *identifier = self.reuseIdentifier;
     preferences[identifier] = [NSNumber numberWithBool:[preferences[identifier] boolValue] ^ true];
+}
+
+-(void)preferencesWillExit:(NSNotification*)notification{
+    NSString *key = [NSString stringWithFormat:@"kCustom%@",self.reuseIdentifier];
+    
+    if(preferences[key]){
+        preferences[key] = [NSNumber numberWithInt:[[self.time text] intValue]];
+    }
+}
+
+-(void)dealloc{
+    [super dealloc];
+    if(_toggle){
+        [_toggle release];
+    } if(_time){
+        [_time release];
+    }
 }
 
 @end
@@ -58,16 +105,18 @@ static NSArray *custom = @[@"Custom Time",@"Friendmoji", @"AutoReply"];
 {
     self = [super init];
     if (self) {
+        preferences = [prefs mutableCopy];
+        
         if(!preferences){
             preferences = [[@{@"kStreakNotifyDisabled" : @NO,
-                             @"kExactTime" : @YES,
-                             @"kTwelveHours" : @YES,
-                             @"kFiveHours" : @NO,
-                             @"kOneHour" : @NO,
-                             @"kTenMinutes" : @NO,
-                             @"kCustomHours" : @"0",
-                             @"kCustomMinutes" : @"0",
-                             @"kCustomSeconds" : @"0"} mutableCopy] retain];
+                              @"kExactTime" : @YES,
+                              @"kTwelveHours" : @YES,
+                              @"kFiveHours" : @NO,
+                              @"kOneHour" : @NO,
+                              @"kTenMinutes" : @NO,
+                              @"kCustomHours" : @"0",
+                              @"kCustomMinutes" : @"0",
+                              @"kCustomSeconds" : @"0"} mutableCopy] retain];
             
             NSArray *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
             NSString *path = [[documents objectAtIndex:0] stringByAppendingPathComponent:@"com.YungRaj.streaknotify.plist"];
@@ -79,14 +128,27 @@ static NSArray *custom = @[@"Custom Time",@"Friendmoji", @"AutoReply"];
     return self;
 }
 
+-(void)viewDidLoad{
+    [super viewDidLoad];
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault];
+}
+
 -(void)viewWillDisappear:(BOOL)animated{
     [super viewWillDisappear:animated];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"streakNotifyPreferencesWillExit"
+                                                        object:nil];
     [self savePreferences];
     [self.navigationController setNavigationBarHidden:YES animated:NO];
+    
+    if ([self isMovingFromParentViewController]) {
+        //specific stuff for being popped off stack
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"resetNotifications"
+                                                            object:nil];
+    }
 }
 
  -(void)choosePhotoForAutoReplySnapstreak{
-    NSLog(@"streaknotify:: prompting user to select auto reply snapstreak image");
+    SNLog(@"streaknotify:: prompting user to select auto reply snapstreak image");
     UIImagePickerController *pickerLibrary = [[UIImagePickerController alloc] init];
     pickerLibrary.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
     pickerLibrary.delegate = self;
@@ -107,7 +169,7 @@ static NSArray *custom = @[@"Custom Time",@"Friendmoji", @"AutoReply"];
  
     NSString *filePath = [documentsDirectory stringByAppendingPathComponent:@"streaknotify_autoreply.jpeg"];
  
-    NSLog(@"streaknotify:: Writing autoreply image to file %@",filePath);
+    SNLog(@"streaknotify:: Writing autoreply image to file %@",filePath);
  
     [imageData writeToFile:filePath atomically:YES];
     [picker dismissViewControllerAnimated:YES completion:nil];
@@ -175,12 +237,13 @@ numberOfRowsInSection:(NSInteger)section{
         
     }
     
-    NSLog(@"%@ key set identifier for cell at indexPath %@",key,indexPath);
+    SNLog(@"%@ key set identifier for cell at indexPath %@",key,indexPath);
     
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:key];
     
     if(!cell){
-        cell = [[[SNSettingsCell alloc] initWithStyle:UITableViewCellStyleDefault
+        cell = [[[SNSettingsCell alloc] initWithType:(SNSettingsCellType)indexPath.section
+                                                style:UITableViewCellStyleDefault
                                       reuseIdentifier:key] autorelease];
         
     }
@@ -206,12 +269,10 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
     
     if(indexPath.section == 2){
         NSString *option = [custom objectAtIndex:indexPath.row];
-                            
-        if([option isEqualToString:@"Custom Time"]){
-                                
-        } else if([option isEqualToString:@"Friendmoji"]){
+        if([option isEqualToString:@"Friendmoji"]){
             FriendmojiListController *friendmojilist = [[FriendmojiListController alloc] init];
             [self.navigationController pushViewController:friendmojilist animated:YES];
+            
         } else if([option isEqualToString:@"AutoReply"]){
             [self choosePhotoForAutoReplySnapstreak];
         }
@@ -227,11 +288,12 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
     [preferences writeToFile:path
                    atomically:YES];
     
+    SNLog(@"Saved preferences %@",preferences);
+    
     prefs = preferences;
     
-    [preferences release];
     preferences = nil;
-    NSLog(@"StreakNotify::Saved preferences");
+    SNLog(@"StreakNotify::Saved preferences");
                                 
 }
 

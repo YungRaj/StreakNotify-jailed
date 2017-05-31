@@ -7,39 +7,29 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		A534A27C1EDE3B940020BD2B /* SNAPI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SNAPI.h; sourceTree = "<group>"; };
+		A534A27D1EDE480B0020BD2B /* FriendmojiListController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FriendmojiListController.h; sourceTree = "<group>"; };
+		A534A27E1EDE480B0020BD2B /* FriendmojiListController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FriendmojiListController.m; sourceTree = "<group>"; };
 		A56114791EDC1532009FC08E /* Interfaces.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Interfaces.h; sourceTree = "<group>"; };
 		A561147A1EDC1532009FC08E /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		A561147B1EDC1532009FC08E /* Tweak.xm */ = {isa = PBXFileReference; lastKnownFileType = text; path = Tweak.xm; sourceTree = "<group>"; };
 		A586CC5A1EDCE85F0052B02F /* SNSettingsViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SNSettingsViewController.h; sourceTree = "<group>"; };
 		A586CC5B1EDCE85F0052B02F /* SNSettingsViewController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = SNSettingsViewController.mm; sourceTree = "<group>"; };
-		A586CC5D1EDCE8780052B02F /* FriendmojiListController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FriendmojiListController.h; sourceTree = "<group>"; };
-		A586CC5E1EDCE8780052B02F /* FriendmojiListController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FriendmojiListController.m; sourceTree = "<group>"; };
-		A586CC5F1EDCE8780052B02F /* FriendmojiTableDataSource.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FriendmojiTableDataSource.h; sourceTree = "<group>"; };
-		A586CC601EDCE8780052B02F /* FriendmojiTableDataSource.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FriendmojiTableDataSource.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		A561146E1EDC1511009FC08E = {
 			isa = PBXGroup;
 			children = (
+				A534A27C1EDE3B940020BD2B /* SNAPI.h */,
 				A56114791EDC1532009FC08E /* Interfaces.h */,
 				A586CC5A1EDCE85F0052B02F /* SNSettingsViewController.h */,
 				A586CC5B1EDCE85F0052B02F /* SNSettingsViewController.mm */,
-				A561147A1EDC1532009FC08E /* Makefile */,
+				A534A27D1EDE480B0020BD2B /* FriendmojiListController.h */,
+				A534A27E1EDE480B0020BD2B /* FriendmojiListController.m */,
 				A561147B1EDC1532009FC08E /* Tweak.xm */,
-				A586CC5C1EDCE8780052B02F /* Friendmojilist */,
+				A561147A1EDC1532009FC08E /* Makefile */,
 			);
-			sourceTree = "<group>";
-		};
-		A586CC5C1EDCE8780052B02F /* Friendmojilist */ = {
-			isa = PBXGroup;
-			children = (
-				A586CC5D1EDCE8780052B02F /* FriendmojiListController.h */,
-				A586CC5E1EDCE8780052B02F /* FriendmojiListController.m */,
-				A586CC5F1EDCE8780052B02F /* FriendmojiTableDataSource.h */,
-				A586CC601EDCE8780052B02F /* FriendmojiTableDataSource.m */,
-			);
-			path = Friendmojilist;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

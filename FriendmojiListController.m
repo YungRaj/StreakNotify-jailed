@@ -1,5 +1,6 @@
-#import <objc/runtime.h>
-#import "FriendmojiTableDataSource.h"
+#include "SNAPI.h"
+#include "FriendmojiListController.h"
+#include <objc/runtime.h>
 
 @interface Friend
 @property (strong,nonatomic) NSString *display;
@@ -32,9 +33,7 @@
 
 @end
 
-@interface FriendmojiTableDataSource () {
-    
-}
+@interface FriendmojiListController ()
 
 @property (strong,nonatomic) NSDictionary *settings;
 @property (strong,nonatomic) NSArray *friendsWithStreaksNames;
@@ -44,13 +43,8 @@
 
 @end
 
+@implementation FriendmojiListController
 
-@implementation FriendmojiTableDataSource
-
-+(id)dataSource
-{
-    return [[[self alloc] init] autorelease];
-}
 
 -(id)init
 {
@@ -108,8 +102,8 @@
             [friendmojisWithoutStreaks addObject:friendmoji];
         }
         
-        NSLog(@"friendmojilist:: Friends with streaks %@ %@",friendsWithStreaksNames,friendmojisWithStreaks);
-        NSLog(@"friendmojilist:: Friends without streaks %@ %@",friendsWithoutStreaksNames,friendmojisWithoutStreaks);
+        SNLog(@"friendmojilist:: Friends with streaks %@ %@",friendsWithStreaksNames,friendmojisWithStreaks);
+        SNLog(@"friendmojilist:: Friends without streaks %@ %@",friendsWithoutStreaksNames,friendmojisWithoutStreaks);
         
         self.friendsWithStreaksNames = friendsWithStreaksNames;
         self.friendmojisWithStreaks = friendmojisWithStreaks;
@@ -131,20 +125,35 @@
             self.settings = settings;
             
             
-            NSLog(@"friendmojilist:: %@",self.settings);
+            SNLog(@"friendmojilist:: %@",self.settings);
         }
-
         
-        /* Add the data source as an observer to find out when the 
+        
+        /* Add the data source as an observer to find out when the
          * FriendmojiListController will exit so that we can save the dictionary to file */
-        [[NSNotificationCenter defaultCenter]
-                        addObserver:self
-                           selector:@selector(friendmojiPreferencesWillExit:)
-                               name:@"friendmojiPreferencesWillExit"
-                            object:nil];
     }
     
     return self;
+}
+
+-(void)viewDidLoad{
+    [super viewDidLoad];
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+}
+
+-(CGSize)contentSize
+{
+    return [self.tableView frame].size;
+}
+
+
+-(void)viewWillDisappear:(BOOL)animated{
+    [super viewWillDisappear:animated];
+    if([self isMovingFromParentViewController]){
+        SNLog(@"friendmojilist::Exiting friendmoji prefs, saving settings");
+        [self savePreferences];
+    }
+    
 }
 
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
@@ -185,13 +194,13 @@ numberOfRowsInSection:(NSInteger)section{
 
 
 -(UITableViewCell*)tableView:(UITableView *)tableView
-         cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+       cellForRowAtIndexPath:(NSIndexPath *)indexPath{
     NSString *identifier = @"friendmojiCell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:identifier];
     
     if(!cell){
         cell = [[[FriendmojiCell alloc] initWithStyle:UITableViewCellStyleDefault
-                                     reuseIdentifier:identifier] autorelease];
+                                      reuseIdentifier:identifier] autorelease];
         
     }
     if(indexPath.section == 0){
@@ -201,7 +210,7 @@ numberOfRowsInSection:(NSInteger)section{
             NSString *name = [self.friendsWithStreaksNames objectAtIndex:indexPath.row];
             NSString *friendmoji = [self.friendmojisWithStreaks objectAtIndex:indexPath.row];
             friendmojiCell.textLabel.text = [NSString stringWithFormat:@"%@ %@",name,friendmoji];
-            NSLog(@"friendmojilist::Cell for index %ld name %@ %@",(long)indexPath.row,name,friendmoji);
+            SNLog(@"friendmojilist::Cell for index %ld name %@ %@",(long)indexPath.row,name,friendmoji);
             if([self.settings[name] boolValue]){
                 friendmojiCell.accessoryType = UITableViewCellAccessoryCheckmark;
             }else{
@@ -215,7 +224,7 @@ numberOfRowsInSection:(NSInteger)section{
             NSString *name = [self.friendsWithoutStreaksNames objectAtIndex:indexPath.row];
             NSString *friendmoji = [self.friendmojisWithoutStreaks objectAtIndex:indexPath.row];
             friendmojiCell.textLabel.text = [NSString stringWithFormat:@"%@ %@",name,friendmoji];
-            NSLog(@"friendmojilist:: Cell for index %ld name %@ %@",(long)indexPath.row,name,friendmoji);
+            SNLog(@"friendmojilist:: Cell for index %ld name %@ %@",(long)indexPath.row,name,friendmoji);
             if([self.settings[name] boolValue]){
                 friendmojiCell.accessoryType = UITableViewCellAccessoryCheckmark;
             }else{
@@ -224,7 +233,7 @@ numberOfRowsInSection:(NSInteger)section{
         }
     }
     return cell;
-
+    
 }
 
 -(void)tableView:(UITableView *)tableView
@@ -252,7 +261,9 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
 }
 
 
--(void)friendmojiPreferencesWillExit:(NSNotification*)notification{
+-(void)savePreferences{
+    SNLog(@"friendmojilist::Saved settings %@",self.settings);
+    
     NSDictionary *settings = self.settings;
     
     NSArray *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
@@ -260,8 +271,6 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
     
     [settings writeToFile:path
                atomically:YES];
-    
-    NSLog(@"friendmojilist::Saved settings");
     
 }
 
@@ -278,5 +287,6 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
     _friendmojisWithStreaks = nil;
     _friendmojisWithoutStreaks = nil;
 }
+
 
 @end

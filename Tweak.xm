@@ -7,6 +7,7 @@
  *
  */
 
+#import "SNAPI.h"
 #import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
@@ -18,18 +19,6 @@
 
 #import "Interfaces.h"
 #import "SNSettingsViewController.h"
-
-#ifdef DEBUG
-#define SNLog(...) NSLog(__VA_ARGS__)
-#else
-#define SNLog(...) void(0)
-#endif
-
-#ifndef kCFCoreFoundationVersionNumber_iOS_9_0
-#define kCFCoreFoundationVersionNumber_iOS_9_0 1240.10
-#endif
-
-#define IOS_LT(version) (kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_##version)
 
 NSDictionary *prefs = nil;
 
@@ -257,7 +246,7 @@ NotExactTime:
 static void ScheduleNotification(NSDate *date,
                                  NSString *message,
                                  NSString *friendName){
-    NSLog(@"Scheduling notification at %@ with message \"%@\" for friend %@",date,message,friendName);
+    SNLog(@"Scheduling notification at %@ with message \"%@\" for friend %@",date,message,friendName);
     
     // Load UIKit to setup notification for SpringBoardServices/UserNotificationServices
     UILocalNotification *notification = [[UILocalNotification alloc] init];
@@ -298,10 +287,10 @@ static void ScheduleNotifications(NSDictionary *info){
         
     if(uns){
         UNSNotificationScheduler *scheduler = [[objc_getClass("UNSNotificationScheduler") alloc] initWithBundleIdentifier:@"com.toyopagroup.picaboo"];
-        NSLog(@"Scheduled notifications succcess %@",[scheduler scheduledLocalNotifications]);
+        SNLog(@"Scheduled notifications succcess %@",[scheduler scheduledLocalNotifications]);
         dlclose(uns);
     } else {
-        NSLog(@"Scheduled notifications success %@",[objc_getClass("SBSLocalNotificationClient") scheduledLocalNotificationsForBundleIdentifier:@"com.toyopagroup.picaboo"]);
+        SNLog(@"Scheduled notifications success %@",[objc_getClass("SBSLocalNotificationClient") scheduledLocalNotificationsForBundleIdentifier:@"com.toyopagroup.picaboo"]);
     }
 }
 
@@ -316,7 +305,7 @@ static NSDictionary* SetUpNotification(NSDate *expirationDate,
         SNLog(@"StreakNotify:: Not scheduling notification for %@, not enabled in custom friends",displayName);
         return nil;
     }
-    SNLog(@"Using streaknotifyd helper service to schedule notification for %@",displayName);
+    SNLog(@"Scheduling notification for %@",displayName);
     float t = hours ? hours : minutes ? minutes : seconds;
     NSString *time = hours ? @"hours" : minutes ? @"minutes" : @"seconds";
     NSDate *notificationDate = nil;
@@ -341,82 +330,85 @@ static NSDictionary* SetUpNotification(NSDate *expirationDate,
 
 
 static void ResetNotifications(){
-    Manager *manager = [objc_getClass("Manager") shared];
-    User *user = [manager user];
-    Friends *friends = [user friends];
-    SCChats *chats = [user chats];
     
-    NSMutableDictionary *notificationsInfo = [[NSMutableDictionary alloc] init];
-    NSMutableArray *notifications = [[NSMutableArray alloc] init];
-    SNLog(@"SCChats allChats %@",[chats allChats]);
-    
-    if([[chats allChats] count]){
-        for(SCChat *chat in [chats allChats]){
-            
-            Snap *earliestUnrepliedSnap = FindEarliestUnrepliedSnapForChat(YES,chat);
-            Friend *f = [friends friendForName:[chat recipient]];
-            
-            NSDate *expirationDate = nil;
-            if(objc_getClass("SOJUFriendmoji")){
-                NSArray *friendmojis = f.friendmojis;
-                SOJUFriendmoji *friendmoji = FindOnFireEmoji(friendmojis);
-                long long expirationTimeValue = [friendmoji expirationTimeValue];
-                expirationDate = [NSDate dateWithTimeIntervalSince1970:expirationTimeValue/1000];
+    dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void){
+        Manager *manager = [objc_getClass("Manager") shared];
+        User *user = [manager user];
+        Friends *friends = [user friends];
+        SCChats *chats = [user chats];
+        
+        NSMutableDictionary *notificationsInfo = [[NSMutableDictionary alloc] init];
+        NSMutableArray *notifications = [[NSMutableArray alloc] init];
+        SNLog(@"SCChats allChats %@",[chats allChats]);
+        
+        if([[chats allChats] count]){
+            for(SCChat *chat in [chats allChats]){
                 
-            }else{
-                expirationDate = [earliestUnrepliedSnap timestamp];
-            }
-            
-            SNLog(@"StreakNotify:: Name and date %@ for %@",expirationDate,[chat recipient]);
-            
-            if([f snapStreakCount]>2 &&
-               (earliestUnrepliedSnap || objc_getClass("SOJUFriendmoji"))){
-                if([prefs[@"kTwelveHours"] boolValue]){
-                    SNLog(@"Scheduling for 12 hours %@",[f name]);
-                    NSDictionary *twelveHours = SetUpNotification(expirationDate,f,0,0,12);
-                    if(twelveHours){
-                        [notifications addObject:twelveHours];
-                    }
+                Snap *earliestUnrepliedSnap = FindEarliestUnrepliedSnapForChat(YES,chat);
+                Friend *f = [friends friendForName:[chat recipient]];
+                
+                NSDate *expirationDate = nil;
+                if(objc_getClass("SOJUFriendmoji")){
+                    NSArray *friendmojis = f.friendmojis;
+                    SOJUFriendmoji *friendmoji = FindOnFireEmoji(friendmojis);
+                    long long expirationTimeValue = [friendmoji expirationTimeValue];
+                    expirationDate = [NSDate dateWithTimeIntervalSince1970:expirationTimeValue/1000];
                     
-                } if([prefs[@"kFiveHours"] boolValue]){
-                    SNLog(@"Scheduling for 5 hours %@",[f name]);
-                    NSDictionary *fiveHours = SetUpNotification(expirationDate,f,0,0,5);
-                    if(fiveHours){
-                        [notifications addObject:fiveHours];
-                    }
-                    
-                } if([prefs[@"kOneHour"] boolValue]){
-                    SNLog(@"Scheduling for 1 hour %@",[f name]);
-                    NSDictionary *oneHour = SetUpNotification(expirationDate,f,0,0,1);
-                    if(oneHour){
-                        [notifications addObject:oneHour];
-                    }
-                    
-                } if([prefs[@"kTenMinutes"] boolValue]){
-                    SNLog(@"Scheduling for 10 minutes %@",[f name]);
-                    NSDictionary *tenMinutes = SetUpNotification(expirationDate,f,0,10,0);
-                    if(tenMinutes){
-                        [notifications addObject:tenMinutes];
-                    }
+                }else{
+                    expirationDate = [earliestUnrepliedSnap timestamp];
                 }
                 
-                float seconds = [prefs[@"kCustomSeconds"] floatValue];
-                float minutes = [prefs[@"kCustomMinutes"] floatValue];
-                float hours = [prefs[@"kCustomHours"] floatValue] ;
-                if(hours || minutes || seconds){
-                    SNLog(@"Scheduling for custom time %@",[f name]);
-                    NSDictionary *customTime = SetUpNotification(expirationDate,f,seconds,minutes,hours);
-                    if(customTime){
-                        [notifications addObject:customTime];
+                SNLog(@"StreakNotify:: Name and date %@ for %@",expirationDate,[chat recipient]);
+                
+                if([f snapStreakCount]>2 &&
+                   (earliestUnrepliedSnap || objc_getClass("SOJUFriendmoji"))){
+                    if([prefs[@"kTwelveHours"] boolValue]){
+                        SNLog(@"Scheduling for 12 hours %@",[f name]);
+                        NSDictionary *twelveHours = SetUpNotification(expirationDate,f,0,0,12);
+                        if(twelveHours){
+                            [notifications addObject:twelveHours];
+                        }
+                        
+                    } if([prefs[@"kFiveHours"] boolValue]){
+                        SNLog(@"Scheduling for 5 hours %@",[f name]);
+                        NSDictionary *fiveHours = SetUpNotification(expirationDate,f,0,0,5);
+                        if(fiveHours){
+                            [notifications addObject:fiveHours];
+                        }
+                        
+                    } if([prefs[@"kOneHour"] boolValue]){
+                        SNLog(@"Scheduling for 1 hour %@",[f name]);
+                        NSDictionary *oneHour = SetUpNotification(expirationDate,f,0,0,1);
+                        if(oneHour){
+                            [notifications addObject:oneHour];
+                        }
+                        
+                    } if([prefs[@"kTenMinutes"] boolValue]){
+                        SNLog(@"Scheduling for 10 minutes %@",[f name]);
+                        NSDictionary *tenMinutes = SetUpNotification(expirationDate,f,0,10,0);
+                        if(tenMinutes){
+                            [notifications addObject:tenMinutes];
+                        }
+                    }
+                    
+                    float seconds = [prefs[@"kCustomSeconds"] floatValue];
+                    float minutes = [prefs[@"kCustomMinutes"] floatValue];
+                    float hours = [prefs[@"kCustomHours"] floatValue] ;
+                    if(hours || minutes || seconds){
+                        SNLog(@"Scheduling for custom time %@",[f name]);
+                        NSDictionary *customTime = SetUpNotification(expirationDate,f,seconds,minutes,hours);
+                        if(customTime){
+                            [notifications addObject:customTime];
+                        }
                     }
                 }
             }
         }
-    }
-    
-    [notificationsInfo setObject:notifications forKey:@"kNotifications"];
-    ScheduleNotifications(notificationsInfo);
-    [notificationsInfo release];
+        
+        [notificationsInfo setObject:notifications forKey:@"kNotifications"];
+        ScheduleNotifications(notificationsInfo);
+        [notificationsInfo release];
+    });
 }
 
 
@@ -572,12 +564,14 @@ void HandleLocalNotification(NSString *username){
     
 }
 
+
 #ifdef THEOS
 %group SnapchatHooks
 %hook MainViewController
 #else
 // @implementation SnapchatHooks
 #endif
+
 
 -(void)viewDidLoad{
     /* Setting up all the user specific data */
@@ -635,6 +629,11 @@ void HandleLocalNotification(NSString *username){
         }
     }
     
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(resetNotifications:)
+                                                 name:@"resetNotifications"
+                                               object:nil];
+    
     CGSize size = self.view.frame.size;
     UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
     button.frame = CGRectMake(size.width-size.width/3,size.height/22.5,size.height/10,size.height/10);
@@ -644,6 +643,13 @@ void HandleLocalNotification(NSString *username){
     [button setTitle:@"🔥" forState:UIControlStateNormal];
     [button addTarget:self action:@selector(startStreakNotifySettings:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:button];
+    
+    UIPanGestureRecognizer* gesture = [[UIPanGestureRecognizer alloc]
+                                   initWithTarget:self
+                                   action:@selector(handlePan:)];
+    [button addGestureRecognizer:gesture];
+    [gesture release];
+    
     object_setInstanceVariable(self,"_settings",button);
 }
 
@@ -704,6 +710,24 @@ clickedButtonAtIndex:(NSInteger)buttonIndex{
     SNSettingsViewController *settingsVC = [[SNSettingsViewController alloc] init];
     [self.navigationController setNavigationBarHidden:NO animated:NO];
     [self.navigationController pushViewController:settingsVC animated:YES];
+}
+
+%new
+
+-(void)handlePan:(UIPanGestureRecognizer*)pgr{
+    if (pgr.state == UIGestureRecognizerStateChanged) {
+        CGPoint center = pgr.view.center;
+        CGPoint translation = [pgr translationInView:pgr.view];
+        center = CGPointMake(center.x + translation.x,
+                             center.y + translation.y);
+        pgr.view.center = center;
+        [pgr setTranslation:CGPointZero inView:pgr.view];
+    }
+}
+
+%new
+-(void)resetNotifications:(NSNotification*)notification{
+    ResetNotifications();
 }
 
 
