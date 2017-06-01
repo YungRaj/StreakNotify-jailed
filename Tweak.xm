@@ -564,6 +564,7 @@ void HandleLocalNotification(NSString *username){
     
 }
 
+static UIButton *settings_button = nil;
 
 #ifdef THEOS
 %group SnapchatHooks
@@ -571,7 +572,6 @@ void HandleLocalNotification(NSString *username){
 #else
 // @implementation SnapchatHooks
 #endif
-
 
 -(void)viewDidLoad{
     /* Setting up all the user specific data */
@@ -633,24 +633,6 @@ void HandleLocalNotification(NSString *username){
                                              selector:@selector(resetNotifications:)
                                                  name:@"resetNotifications"
                                                object:nil];
-    
-    CGSize size = self.view.frame.size;
-    UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
-    button.frame = CGRectMake(size.width-size.width/3,size.height/22.5,size.height/10,size.height/10);
-    button.backgroundColor = [UIColor orangeColor];
-    button.layer.masksToBounds = true;
-    button.layer.cornerRadius = button.frame.size.width/2;
-    [button setTitle:@"🔥" forState:UIControlStateNormal];
-    [button addTarget:self action:@selector(startStreakNotifySettings:) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:button];
-    
-    UIPanGestureRecognizer* gesture = [[UIPanGestureRecognizer alloc]
-                                   initWithTarget:self
-                                   action:@selector(handlePan:)];
-    [button addGestureRecognizer:gesture];
-    [gesture release];
-    
-    object_setInstanceVariable(self,"_settings",button);
 }
 
 -(void)didSendSnap:(Snap*)snap{
@@ -671,9 +653,6 @@ void HandleLocalNotification(NSString *username){
 
 -(void)dealloc{
     %orig();
-    id _settings;
-    object_getInstanceVariable(self,"_settings",(void**)&_settings);
-    [_settings release];
 }
 
 #ifdef THEOS
@@ -704,32 +683,12 @@ clickedButtonAtIndex:(NSInteger)buttonIndex{
     }
 }
 
+#ifdef THEOS
 %new
-
--(void)startStreakNotifySettings:(UIButton*)sender{
-    SNSettingsViewController *settingsVC = [[SNSettingsViewController alloc] init];
-    [self.navigationController setNavigationBarHidden:NO animated:NO];
-    [self.navigationController pushViewController:settingsVC animated:YES];
-}
-
-%new
-
--(void)handlePan:(UIPanGestureRecognizer*)pgr{
-    if (pgr.state == UIGestureRecognizerStateChanged) {
-        CGPoint center = pgr.view.center;
-        CGPoint translation = [pgr translationInView:pgr.view];
-        center = CGPointMake(center.x + translation.x,
-                             center.y + translation.y);
-        pgr.view.center = center;
-        [pgr setTranslation:CGPointZero inView:pgr.view];
-    }
-}
-
-%new
+#endif
 -(void)resetNotifications:(NSNotification*)notification{
     ResetNotifications();
 }
-
 
 #ifdef THEOS
 %end
@@ -799,6 +758,26 @@ static NSMutableArray *feedCellLabels = nil;
 #ifdef THEOS
 %hook SCFeedViewController
 #endif
+
+-(void)viewDidLoad{
+    %orig();
+    CGSize size = self.view.frame.size;
+    settings_button = [UIButton buttonWithType:UIButtonTypeCustom];
+    settings_button.frame = CGRectMake(size.width-size.width/5,size.height-size.height/40-size.height/10,
+                                       size.height/10,size.height/10);
+    settings_button.backgroundColor = [UIColor orangeColor];
+    settings_button.layer.masksToBounds = true;
+    settings_button.layer.cornerRadius = settings_button.frame.size.width/2;
+    [settings_button setTitle:@"🔥" forState:UIControlStateNormal];
+    [settings_button addTarget:self action:@selector(startStreakNotifySettings:) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:settings_button];
+    
+    UIPanGestureRecognizer* gesture = [[UIPanGestureRecognizer alloc]
+                                       initWithTarget:self
+                                       action:@selector(handlePan:)];
+    [settings_button addGestureRecognizer:gesture];
+    [gesture release];
+}
 
 
 -(UITableViewCell*)tableView:(UITableView*)tableView
@@ -926,6 +905,41 @@ cellForRowAtIndexPath:(NSIndexPath*)indexPath{
     feedCellLabels = nil;
     %orig();
 }
+
+#ifdef THEOS
+%new
+#endif
+
+-(void)startStreakNotifySettings:(UIButton*)sender{
+    SNSettingsViewController *settingsVC = [[SNSettingsViewController alloc] init];
+    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    [self.navigationController pushViewController:settingsVC animated:YES];
+}
+
+#ifdef THEOS
+%new
+#endif
+
+-(void)handlePan:(UIPanGestureRecognizer*)pgr{
+    MainViewController *mainVC = (MainViewController*)self.parentViewController;
+    UIView *navigationBar = mainVC.navigationBar;
+    
+    if (pgr.state == UIGestureRecognizerStateChanged) {
+        CGPoint center = pgr.view.center;
+        
+        CGPoint translation = [pgr translationInView:pgr.view];
+        CGPoint newCenter = CGPointMake(center.x + translation.x,
+                                        center.y + translation.y);
+        pgr.view.center = newCenter;
+        
+        if(CGRectIntersectsRect(navigationBar.frame,pgr.view.frame)){
+            pgr.view.center = center;
+        }
+        
+        [pgr setTranslation:CGPointZero inView:pgr.view];
+    }
+}
+
 
 #ifdef THEOS
 %end
@@ -1249,8 +1263,6 @@ void constructor()
     if(![prefs[@"kStreakNotifyDisabled"] boolValue]){
         // Class Friend = objc_getClass("Friend");
         // Was going to create a unconventional hook to Friend but SOJUFriendmoji saved my ass
-        Class mainVC = objc_getClass("MainViewController");
-        class_addIvar(mainVC, "_settings", sizeof(id), rint(log2(sizeof(id))), @encode(id));
         
         %init(SnapchatHooks);
         // this has to be done otherwise our hooks would not be used!

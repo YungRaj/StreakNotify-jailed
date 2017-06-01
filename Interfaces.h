@@ -2223,8 +2223,17 @@ typedef id CDUnknownBlockType;
 + (void)fetchBestFriendsOfFriends:(id)arg1 successBlock:(id)arg2 failureBlock:(id)arg3;
 @end
 
+@interface SCFeedViewController : UIViewController{
+    UIView *_cardContainerView;
+}
+
+@property (retain, nonatomic) UITableView *tableView;
+
+@end
+
 @interface MainViewController : UIViewController
 
+@property(retain, nonatomic) UIView *navigationBar;
 
 @end
 
