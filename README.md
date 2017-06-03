@@ -15,7 +15,7 @@ Auto Reply allows Snaps to be sent automatically to those when notifications are
 3. Clone this project using git clone http://github.com/YungRaj/StreakNotify-jailed in Terminal
 4. Set Snapchat .ipa file to .zip and unarchive
 5. Copy StreakNotify-install folder contents to Payload/Snapchat.app
-6. Copy PhantomLite contents to Payload/Snapchat.app
+6. Copy PhantomLite http://github.com/CokePokes/PhantomLite contents to Payload/Snapchat.app
 7. Open the Snapchat binary in Payload/Snapchat.app/Snapchat in iHex or some binary editor
 8. Replace every instance of the string "/usr/lib/libSystem.B.dylib" to "@executable_path/Sys.dylib" and save changes to file
 9. Select folder that contains Snapchat.app and zip it. Change the .zip to .ipa
