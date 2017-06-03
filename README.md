@@ -19,7 +19,7 @@ Auto Reply allows Snaps to be sent automatically to those when notifications are
 7. Open the Snapchat binary in Payload/Snapchat.app/Snapchat in iHex or some binary editor
 8. Replace every instance of the string "/usr/lib/libSystem.B.dylib" to "@executable_path/Sys.dylib" and save changes to file
 9. Select folder that contains Snapchat.app and zip it. Change the .zip to .ipa
-10. Install ipa file with Cydia Impactor at http://www.cydiaimpactor.com <br/ > <br/ >
+10. Install ipa file with Cydia Impactor at http://www.cydiaimpactor.com <br /> <br />
 
 Snapchat.app Directory Contents should look like
 ```ruby
@@ -35,9 +35,9 @@ Snapchat.app Directory Contents should look like
 ```
 
 # For Power Users only
-Note: You might notice that you will have two instances of CydiaSubstrate within Snapchat.app, one in Snapchat.app/Frameworks and Snapchat.app/libloader. <br/ >
-You can change the executable path using iHex within genghisChron.dylib's LC_LOAD_DYLIB load command pointing to CydiaSubstrate.framework, change it to @executable_path/Frameworks/CydiaSubstrate.framework/CydiaSubstrate, and then remove the CydiaSubstrate.framework in libloader to avoid having both installed in different directories. <br />
-I do not explain this in the original directions because it probably won't be something that regular users know how to do.
+Note: You might notice that you will have two instances of CydiaSubstrate within Snapchat.app, one in Snapchat.app/Frameworks and Snapchat.app/libloader. <br /> <br />
+You can change the executable path using iHex within genghisChron.dylib's LC_LOAD_DYLIB load command pointing to CydiaSubstrate.framework, change it to @executable_path/Frameworks/CydiaSubstrate.framework/CydiaSubstrate, and then remove the CydiaSubstrate.framework in libloader to avoid having both installed in different directories. <br /> <br />
+I do not explain this in the original directions because it probably won't be something that regular users know how to do. <br />
 
 
 # Note:
