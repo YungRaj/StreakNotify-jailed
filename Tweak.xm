@@ -328,87 +328,94 @@ static NSDictionary* SetUpNotification(NSDate *expirationDate,
     }
 }
 
+static BOOL running = NO;
 
 static void ResetNotifications(){
     
-    dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void){
-        Manager *manager = [objc_getClass("Manager") shared];
-        User *user = [manager user];
-        Friends *friends = [user friends];
-        SCChats *chats = [user chats];
-        
-        NSMutableDictionary *notificationsInfo = [[NSMutableDictionary alloc] init];
-        NSMutableArray *notifications = [[NSMutableArray alloc] init];
-        SNLog(@"SCChats allChats %@",[chats allChats]);
-        
-        if([[chats allChats] count]){
-            for(SCChat *chat in [chats allChats]){
-                
-                Snap *earliestUnrepliedSnap = FindEarliestUnrepliedSnapForChat(YES,chat);
-                Friend *f = [friends friendForName:[chat recipient]];
-                
-                NSDate *expirationDate = nil;
-                if(objc_getClass("SOJUFriendmoji")){
-                    NSArray *friendmojis = f.friendmojis;
-                    SOJUFriendmoji *friendmoji = FindOnFireEmoji(friendmojis);
-                    long long expirationTimeValue = [friendmoji expirationTimeValue];
-                    expirationDate = [NSDate dateWithTimeIntervalSince1970:expirationTimeValue/1000];
+    if(!running){
+        dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void){
+            running = YES;
+            Manager *manager = [objc_getClass("Manager") shared];
+            User *user = [manager user];
+            Friends *friends = [user friends];
+            SCChats *chats = [user chats];
+            
+            NSMutableDictionary *notificationsInfo = [[NSMutableDictionary alloc] init];
+            NSMutableArray *notifications = [[NSMutableArray alloc] init];
+            SNLog(@"SCChats allChats %@",[chats allChats]);
+            
+            if([[chats allChats] count]){
+                for(SCChat *chat in [chats allChats]){
                     
-                }else{
-                    expirationDate = [earliestUnrepliedSnap timestamp];
-                }
-                
-                SNLog(@"StreakNotify:: Name and date %@ for %@",expirationDate,[chat recipient]);
-                
-                if([f snapStreakCount]>2 &&
-                   (earliestUnrepliedSnap || objc_getClass("SOJUFriendmoji"))){
-                    if([prefs[@"kTwelveHours"] boolValue]){
-                        SNLog(@"Scheduling for 12 hours %@",[f name]);
-                        NSDictionary *twelveHours = SetUpNotification(expirationDate,f,0,0,12);
-                        if(twelveHours){
-                            [notifications addObject:twelveHours];
-                        }
+                    Snap *earliestUnrepliedSnap = FindEarliestUnrepliedSnapForChat(YES,chat);
+                    Friend *f = [friends friendForName:[chat recipient]];
+                    
+                    NSDate *expirationDate = nil;
+                    if(objc_getClass("SOJUFriendmoji")){
+                        NSArray *friendmojis = f.friendmojis;
+                        SOJUFriendmoji *friendmoji = FindOnFireEmoji(friendmojis);
+                        long long expirationTimeValue = [friendmoji expirationTimeValue];
+                        expirationDate = [NSDate dateWithTimeIntervalSince1970:expirationTimeValue/1000];
                         
-                    } if([prefs[@"kFiveHours"] boolValue]){
-                        SNLog(@"Scheduling for 5 hours %@",[f name]);
-                        NSDictionary *fiveHours = SetUpNotification(expirationDate,f,0,0,5);
-                        if(fiveHours){
-                            [notifications addObject:fiveHours];
-                        }
-                        
-                    } if([prefs[@"kOneHour"] boolValue]){
-                        SNLog(@"Scheduling for 1 hour %@",[f name]);
-                        NSDictionary *oneHour = SetUpNotification(expirationDate,f,0,0,1);
-                        if(oneHour){
-                            [notifications addObject:oneHour];
-                        }
-                        
-                    } if([prefs[@"kTenMinutes"] boolValue]){
-                        SNLog(@"Scheduling for 10 minutes %@",[f name]);
-                        NSDictionary *tenMinutes = SetUpNotification(expirationDate,f,0,10,0);
-                        if(tenMinutes){
-                            [notifications addObject:tenMinutes];
-                        }
+                    }else{
+                        expirationDate = [earliestUnrepliedSnap timestamp];
                     }
                     
-                    float seconds = [prefs[@"kCustomSeconds"] floatValue];
-                    float minutes = [prefs[@"kCustomMinutes"] floatValue];
-                    float hours = [prefs[@"kCustomHours"] floatValue] ;
-                    if(hours || minutes || seconds){
-                        SNLog(@"Scheduling for custom time %@",[f name]);
-                        NSDictionary *customTime = SetUpNotification(expirationDate,f,seconds,minutes,hours);
-                        if(customTime){
-                            [notifications addObject:customTime];
+                    SNLog(@"StreakNotify:: Name and date %@ for %@",expirationDate,[chat recipient]);
+                    
+                    if([f snapStreakCount]>2 &&
+                       (earliestUnrepliedSnap || objc_getClass("SOJUFriendmoji"))){
+                        if([prefs[@"kTwelveHours"] boolValue]){
+                            SNLog(@"Scheduling for 12 hours %@",[f name]);
+                            NSDictionary *twelveHours = SetUpNotification(expirationDate,f,0,0,12);
+                            if(twelveHours){
+                                [notifications addObject:twelveHours];
+                            }
+                            
+                        } if([prefs[@"kFiveHours"] boolValue]){
+                            SNLog(@"Scheduling for 5 hours %@",[f name]);
+                            NSDictionary *fiveHours = SetUpNotification(expirationDate,f,0,0,5);
+                            if(fiveHours){
+                                [notifications addObject:fiveHours];
+                            }
+                            
+                        } if([prefs[@"kOneHour"] boolValue]){
+                            SNLog(@"Scheduling for 1 hour %@",[f name]);
+                            NSDictionary *oneHour = SetUpNotification(expirationDate,f,0,0,1);
+                            if(oneHour){
+                                [notifications addObject:oneHour];
+                            }
+                            
+                        } if([prefs[@"kTenMinutes"] boolValue]){
+                            SNLog(@"Scheduling for 10 minutes %@",[f name]);
+                            NSDictionary *tenMinutes = SetUpNotification(expirationDate,f,0,10,0);
+                            if(tenMinutes){
+                                [notifications addObject:tenMinutes];
+                            }
+                        }
+                        
+                        float seconds = [prefs[@"kCustomSeconds"] floatValue];
+                        float minutes = [prefs[@"kCustomMinutes"] floatValue];
+                        float hours = [prefs[@"kCustomHours"] floatValue] ;
+                        if(hours || minutes || seconds){
+                            SNLog(@"Scheduling for custom time %@",[f name]);
+                            NSDictionary *customTime = SetUpNotification(expirationDate,f,seconds,minutes,hours);
+                            if(customTime){
+                                [notifications addObject:customTime];
+                            }
                         }
                     }
                 }
             }
-        }
-        
-        [notificationsInfo setObject:notifications forKey:@"kNotifications"];
-        ScheduleNotifications(notificationsInfo);
-        [notificationsInfo release];
-    });
+            
+            [notificationsInfo setObject:notifications forKey:@"kNotifications"];
+            ScheduleNotifications(notificationsInfo);
+            [notificationsInfo release];
+            
+            running = NO;
+            
+        });
+    }
 }
 
 
